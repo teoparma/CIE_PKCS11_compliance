@@ -1,9 +1,7 @@
 ﻿  functions.cpp
-C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(229,89): warning C4267: 'argomento': conversione da 'size_t' a 'CK_ULONG'. Possibile perdita di dati.
-C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(273,91): warning C4267: 'argomento': conversione da 'size_t' a 'CK_ULONG'. Possibile perdita di dati.
-C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(595,46): warning C4267: 'argomento': conversione da 'size_t' a 'const unsigned long'. Possibile perdita di dati.
-C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(665,46): warning C4267: 'argomento': conversione da 'size_t' a 'const unsigned long'. Possibile perdita di dati.
-C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(712,46): warning C4267: 'argomento': conversione da 'size_t' a 'const unsigned long'. Possibile perdita di dati.
-C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(1109,62): warning C4267: 'argomento': conversione da 'size_t' a 'const unsigned long'. Possibile perdita di dati.
-C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(1110,62): warning C4267: 'argomento': conversione da 'size_t' a 'const unsigned long'. Possibile perdita di dati.
+C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(227,89): warning C4267: 'argomento': conversione da 'size_t' a 'CK_ULONG'. Possibile perdita di dati.
+C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(271,91): warning C4267: 'argomento': conversione da 'size_t' a 'CK_ULONG'. Possibile perdita di dati.
+C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(593,46): warning C4267: 'argomento': conversione da 'size_t' a 'const unsigned long'. Possibile perdita di dati.
+C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(663,46): warning C4267: 'argomento': conversione da 'size_t' a 'const unsigned long'. Possibile perdita di dati.
+C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\functions.cpp(710,46): warning C4267: 'argomento': conversione da 'size_t' a 'const unsigned long'. Possibile perdita di dati.
   CIEcompliance.vcxproj -> C:\Users\huawei\Desktop\tesi\CIE_PKCS11_compliance\CIEcompliance\x64\Debug\CIEcompliance.exe
