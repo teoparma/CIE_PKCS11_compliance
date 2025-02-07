@@ -27,6 +27,7 @@
 #include <map>
 
 #include "functions.h"
+#include "testCompliance.h"
 
 CK_FUNCTION_LIST_PTR g_pFuncList;
 std::map<CK_MECHANISM_TYPE, std::string> mechanismMap;
@@ -81,6 +82,7 @@ int main(int argc, char* argv[])
 	}
 
 	PKCS11 cryptoki(&g_pFuncList, mechanismMap);
+	Tester tester(&g_pFuncList, &cryptoki);
 
 	std::cout << "  -- Richiesta completata " << std::endl;
 
@@ -99,6 +101,8 @@ int main(int argc, char* argv[])
 		{
 			std::cout << "\nTest numbers:" << std::endl;
 			std::cout << "1 Digest compliance test" << std::endl;
+			std::cout << "2 Sign compliance test" << std::endl;
+			std::cout << "3 Verify compliance test" << std::endl;
 			std::cout << "20 Exit" << std::endl;
 			std::cout << "Insert the test number:" << std::endl;
 			std::cin >> sCommandLine;
@@ -140,7 +144,7 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			if (!cryptoki.digestCompliance(hSession, pSlotList[0]))
+			if (!tester.digestCompliance(hSession, pSlotList[0]))
 			{
 				free(pSlotList);
 				cryptoki.closeSession(hSession);
@@ -154,6 +158,112 @@ int main(int argc, char* argv[])
 
 			cryptoki.close();
 			std::cout << "-> Test 1 concluso" << std::endl;
+		}
+		else if (strcmp(szCmd, "2") == 0) {
+			CK_ULONG ulCount = 0;
+			std::cout << "-> Test 2 - sign compliance" << std::endl;
+			cryptoki.init();
+
+			CK_SLOT_ID_PTR pSlotList = cryptoki.getSlotList(true, &ulCount);
+			if (pSlotList == NULL_PTR)
+			{
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			CK_SESSION_HANDLE hSession = cryptoki.openSession(pSlotList[0]);
+			if (hSession == NULL_PTR)
+			{
+				free(pSlotList);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			if (!cryptoki.login(hSession)) {
+				free(pSlotList);
+				cryptoki.closeSession(hSession);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			if (!tester.signCompliance(hSession))
+			{
+				free(pSlotList);
+				cryptoki.closeSession(hSession);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			if (!cryptoki.logout(hSession)) {
+				free(pSlotList);
+				cryptoki.closeSession(hSession);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			free(pSlotList);
+			cryptoki.closeSession(hSession);
+
+			cryptoki.close();
+			std::cout << "-> Test 2 concluso" << std::endl;
+		}
+		else if (strcmp(szCmd, "3") == 0) {
+			CK_ULONG ulCount = 0;
+			std::cout << "-> Test 3 - verify compliance" << std::endl;
+			cryptoki.init();
+
+			CK_SLOT_ID_PTR pSlotList = cryptoki.getSlotList(true, &ulCount);
+			if (pSlotList == NULL_PTR)
+			{
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			CK_SESSION_HANDLE hSession = cryptoki.openSession(pSlotList[0]);
+			if (hSession == NULL_PTR)
+			{
+				free(pSlotList);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			if (!cryptoki.login(hSession)) {
+				free(pSlotList);
+				cryptoki.closeSession(hSession);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			if (!tester.verifyCompliance(hSession))
+			{
+				free(pSlotList);
+				cryptoki.closeSession(hSession);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			if (!cryptoki.logout(hSession)) {
+				free(pSlotList);
+				cryptoki.closeSession(hSession);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			free(pSlotList);
+			cryptoki.closeSession(hSession);
+
+			cryptoki.close();
+			std::cout << "-> Test 3 concluso" << std::endl;
 		}
 		else if (strcmp(szCmd, "20") == 0)
 		{

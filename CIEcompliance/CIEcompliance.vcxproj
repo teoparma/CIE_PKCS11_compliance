@@ -128,23 +128,33 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CIEcompliance.cpp" />
+    <ClCompile Include="commons.cpp" />
+    <ClCompile Include="digestCompliance.cpp" />
     <ClCompile Include="error_map.cpp" />
     <ClCompile Include="functions.cpp" />
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="signCompliance.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="testCompliance.cpp" />
     <ClCompile Include="UUCByteArray.cpp" />
+    <ClCompile Include="verifyCompliance.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="commons.h" />
     <ClInclude Include="cryptoki.h" />
+    <ClInclude Include="digestCompliance.h" />
     <ClInclude Include="error_map.h" />
     <ClInclude Include="functions.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="pkcs11.h" />
     <ClInclude Include="pkcs11f.h" />
     <ClInclude Include="pkcs11t.h" />
+    <ClInclude Include="signCompliance.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="testCompliance.h" />
     <ClInclude Include="UUCByteArray.h" />
+    <ClInclude Include="verifyCompliance.h" />
     <ClInclude Include="win32.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
