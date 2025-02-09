@@ -59,53 +59,69 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 
 
 	std::cout << "\n\tStarting Sign operation...";
-	rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
-	if (rv != CKR_OK)
-	{
-		error(rv);
-		return false;
+	while(true){
+		rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+		if (rv == CKR_GENERAL_ERROR) { continue; }
+		if (rv != CKR_OK)
+		{
+			error(rv);
+			return false;
+		}
+
+		rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), NULL, &outputLen);
+		if (rv == CKR_GENERAL_ERROR) { continue; }
+		if (rv != CKR_OK)
+		{
+			error(rv);
+			return false;
+		}
+
+		pOutput = (BYTE*)malloc(outputLen);
+
+		rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, &outputLen);
+		if (rv == CKR_GENERAL_ERROR) { delete pOutput; continue; }
+		if (rv != CKR_OK)
+		{
+			delete pOutput;
+			error(rv);
+			return false;
+		}
+
+		break;
 	}
-
-	rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), NULL, &outputLen);
-	if (rv != CKR_OK)
-	{
-		error(rv);
-		return false;
-	}
-
-	pOutput = (BYTE*)malloc(outputLen);
-
-	rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, &outputLen);
-	if (rv != CKR_OK)
-	{
-		delete pOutput;
-		error(rv);
-		return false;
-	}	
 	std::cout << " Finished" << std::endl;
 
+	
 	//sign operation to obtain the sign of a null input
 	BYTE* pOutputNull;
 	CK_ULONG outputLenNull = 256;
-	rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
-	if (rv != CKR_OK)
-	{
-		error(rv);
-		return false;
-	}
-	rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, NULL, &outputLenNull);
-	if (rv != CKR_OK)
-	{
-		error(rv);
-		return false;
-	}
-	pOutputNull = (BYTE*)malloc(outputLenNull);
-	rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, pOutputNull, &outputLenNull);
-	if (rv != CKR_OK)
-	{
-		delete pOutputNull;
-		error(rv);
-		return false;
+	while (true) {
+		rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+		if (rv == CKR_GENERAL_ERROR) { continue; }
+		if (rv != CKR_OK)
+		{
+			error(rv);
+			return false;
+		}
+		rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, NULL, &outputLenNull);
+		if (rv == CKR_GENERAL_ERROR) { continue; }
+		if (rv != CKR_OK)
+		{
+			error(rv);
+			return false;
+		}
+		pOutputNull = (BYTE*)malloc(outputLenNull);
+
+		rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, pOutputNull, &outputLenNull);
+		if (rv == CKR_GENERAL_ERROR) { delete pOutputNull; continue; }
+		if (rv != CKR_OK)
+		{
+			delete pOutputNull;
+			error(rv);
+			return false;
+		}
+
+		break;
 	}
 
 
@@ -125,6 +141,7 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	}
 
 	std::cout << "\n\n\t2- Calling C_VerifyInit with a NULL Mechanism   ->   **CRASH**" << std::endl;
+	//CRASH
 	/*rv = g_pFuncList->C_VerifyInit(hSession, NULL_PTR, hObjectPubKey);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
@@ -235,8 +252,9 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 		std::cout << "\t -Re-init the Verify operation" << std::endl;
 	}
 
-	//CRASH
+
 	std::cout << "\n\n\t2- Calling C_Verify with a NULL_PTR pData and not-NULL ulDataLen	->	**CRASH**" << std::endl;
+	//CRASHS
 	/*rv = g_pFuncList->C_Verify(hSession, NULL_PTR, dataVal.getLength(), pOutput, outputLen);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
@@ -668,23 +686,30 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	std::cout << "\n\n\t4- Calling C_VerifyUpdate with a not-NULL pData and NULL ulDataLen" << std::endl;
 	rv = g_pFuncList->C_VerifyUpdate(hSession, (BYTE*)dataVal.getContent(), NULL);
 	error(rv);
-	/*if (rv == CKR_ARGUMENTS_BAD) {
+	if (rv == CKR_ARGUMENTS_BAD) {
 		std::cout << "\t-> compliant" << std::endl;
 	}
 	else {
 		std::cout << "\t** not compliant" << std::endl;
-	}*/
+	}
 	if (rv == CKR_OK) {
 		std::cout << "\t\tCalling C_VerifyFinal...";
-		rv = g_pFuncList->C_VerifyFinal(hSession, pOutputNull, outputLenNull);
+		rv = g_pFuncList->C_VerifyFinal(hSession, pOutput, outputLen);
+		CK_RV first_rv = rv;
 		if (rv == CKR_OK) {
-			std::cout << "Ok: Signature is valid (signature of an NULL input)" << std::endl;
+			std::cout << "Signature is valid" << std::endl;
 		}
 		else {
-			error(rv);
-			std::cout << "not Ok: Signature is not valid" << std::endl;
+			std::cout << "Signature is not valid ";
+			g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+			g_pFuncList->C_VerifyUpdate(hSession, (BYTE*)dataVal.getContent(), NULL);
+			rv = g_pFuncList->C_VerifyFinal(hSession, pOutputNull, outputLenNull);
+			if (rv == CKR_OK) {
+				std::cout << "(signature of a NULL input)";
+			}
+			std::cout << "\n";
 		}
-
+		error(first_rv);
 		std::cout << "\t -Re-init the Verify operation" << std::endl;
 		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
 		if (rv != CKR_OK) {
@@ -1028,7 +1053,7 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	rv = g_pFuncList->C_VerifyFinal(NULL, NULL_PTR, NULL_PTR);
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
-		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID > " << std::endl;
 		std::cout << "\tChecking if operation is still active...";
 		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
 		if (rv == CKR_OPERATION_ACTIVE) {
@@ -1039,7 +1064,7 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 		}
 	}
 	else {
-		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > " << std::endl;
 	}
 
 	std::cout << "\n\n\n\n";

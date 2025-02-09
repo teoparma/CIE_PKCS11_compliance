@@ -277,7 +277,7 @@ bool PKCS11::login(CK_SESSION_HANDLE hSession)
 {
 	std::cout << "  -> Login allo slot\n    - C_Login" << std::endl;
 
-
+	CK_RV rv;
 	bool pinIsGood = false;
 	std::string sPIN;
 	while (!pinIsGood)
@@ -304,13 +304,21 @@ bool PKCS11::login(CK_SESSION_HANDLE hSession)
 				std::cout << "   Attenzione: Il pin deve essere composto da 4 numeri" << std::endl;;
 		}
 	}
-
-	CK_RV rv = g_pFuncList->C_Login(hSession, CKU_USER, (CK_CHAR_PTR)sPIN.c_str(), sPIN.size());
-	if (rv != CKR_OK)
-	{
-		error(rv);
-		return false;
-	}
+	//modificato
+	int timeout = 10;
+	do {
+		rv = g_pFuncList->C_Login(hSession, CKU_USER, (CK_CHAR_PTR)sPIN.c_str(), sPIN.size());
+		if (rv != CKR_OK && rv != CKR_GENERAL_ERROR)
+		{
+			error(rv);
+			return false;
+		}
+		timeout--;
+		if (timeout = 0) {
+			error(rv);
+			return false;
+		}
+	} while (rv == CKR_GENERAL_ERROR);
 
 	std::cout << "  -- Login Effettuato " << std::endl;
 	return true;
