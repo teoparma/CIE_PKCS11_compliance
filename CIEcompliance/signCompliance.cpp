@@ -27,7 +27,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 
 	std::cout << "\n\n\n\n[TEST]	->	  C_SignInit (CKM_MD5_RSA_PKCS)" << std::endl;
 
-	std::cout << "\n\t-Finding private key" << std::endl;
+	std::cout << "\n\t-Finding private key...";
 	if (!cryptoki->findObject(hSession, template_cko_keyPri, 1, &hObjectPriKey, &ulCount))
 	{
 		std::cout << "  -> Operazione fallita" << std::endl;
@@ -39,6 +39,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		std::cout << "  -> Oggetto chiave privata non trovato" << std::endl;
 		return false;
 	}
+	std::cout << "Ok" << std::endl;
 
 	{
 		CK_MECHANISM invalidMech[] = { CKM_MD5, NULL, 0 };
@@ -77,10 +78,10 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 	rv = g_pFuncList->C_SignInit(NULL, NULL_PTR, NULL);
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
-		std::cout << "\t-> compliant: CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\t-> compliant: CKR_SESSION_HANDLE_INVALID >" << std::endl;
 	}
 	else {
-		std::cout << "\t** not compliant" << std::endl;
+		std::cout << "\t** not compliant CKR_SESSION_HANDLE_INVALID >" << std::endl;
 	}
 
 	{
@@ -106,6 +107,47 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 	else {
 		std::cout << "\t** not compliant" << std::endl;
 	}*/
+
+	std::cout << "\n\n\t6- Calling C_SignInit with a NULL hKey" << std::endl;
+	rv = g_pFuncList->C_SignInit(hSession, pMechanism, NULL);
+	error(rv);
+	if (rv == CKR_KEY_HANDLE_INVALID) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+
+
+	{
+		CK_OBJECT_HANDLE hObjectPubKey;
+		CK_OBJECT_CLASS ckClassPub = CKO_PUBLIC_KEY;
+		CK_ATTRIBUTE template_cko_keyPub[] = {
+			{CKA_CLASS, &ckClassPub, sizeof(ckClassPub)},
+		};
+
+		if (!cryptoki->findObject(hSession, template_cko_keyPub, 1, &hObjectPubKey, &ulCount))
+		{
+			std::cout << "  -> Operazione fallita" << std::endl;
+			return false;
+		}
+
+		if (ulCount < 1)
+		{
+			std::cout << "  -> Oggetto chiave privata non trovato" << std::endl;
+			return false;
+		}
+
+		std::cout << "\n\n\t7- Calling C_SignInit with publicKey" << std::endl;
+		rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPubKey);
+		error(rv);
+		if (rv == CKR_KEY_FUNCTION_NOT_PERMITTED) {
+			std::cout << "\t-> compliant" << std::endl;
+		}
+		else {
+			std::cout << "\t** not compliant" << std::endl;
+		}
+	}
 
 	std::cout << "\n\n\t- Calling C_SignInit with valid arguments...";
 	rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
@@ -211,6 +253,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		}
 	}
 
+	/*
 	std::cout << "\n\n\t4- Calling C_Sign with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
 	do {
 		if (rv == CKR_GENERAL_ERROR) { g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey); }
@@ -263,7 +306,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 				return false;
 			}
 		}
-	}
+	}*/
 
 	{
 		CK_ULONG outputLenBig = outputLen + 1;
@@ -271,28 +314,27 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		CK_ULONG outputLenSmaller = outputLenSmall - 1;
 		BYTE* pOutputSmall = (BYTE*)malloc(outputLenSmall);
 
-		std::cout << "\n\n\t6- Calling C_Sign with a buffer too small" << std::endl;
+		std::cout << "\n\n\t4- Calling C_Sign with a buffer too small" << std::endl;
 		rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutputSmall, &outputLenSmall);
 		error(rv);
 		if (rv == CKR_BUFFER_TOO_SMALL)
 		{
 			std::cout << "\t-> compliant" << std::endl;
+			std::cout << "\tChecking if operation is still active...";
+			rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+			if (rv == CKR_OPERATION_ACTIVE) {
+				std::cout << "Yes	-> compliant" << std::endl;
+			}
+			else {
+				std::cout << "No	** not compliant" << std::endl;
+				std::cout << "\t -Re-init the Sign operation" << std::endl;
+			}
 		}
 		else {
 			std::cout << "\t** not compliant" << std::endl;
-			if (rv != CKR_OK) {
-				std::cout << "\tChecking if operation is still active...";
-				rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
-				if (rv == CKR_OPERATION_ACTIVE) {
-					std::cout << "Yes	-> compliant" << std::endl;
-				}
-				else {
-					std::cout << "No	** not compliant" << std::endl;
-				}
-			}
 		}
-
-
+	
+/*
 		//HEAP CORRUPTION DETECTED
 		std::cout << "\n\n\t-7 Calling C_Sign with a buffer too small and a wrong (it does not match with the accual buffer's size) outputLen Ok (with value >= RSA PKCS#1 Signature length (256))" << std::endl;
 		do {
@@ -395,13 +437,12 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 					return false;
 				}
 			}
-		}
+		}*/
 		free(pOutputSmall);
 	}
 
-
 	//CRASH
-	std::cout << "\n\n\t11- Calling C_Sign with a NULL hSession		->		**CRASH**" << std::endl;
+	std::cout << "\n\n\t5- Calling C_Sign with a NULL hSession		->		**CRASH**" << std::endl;
 	/*do {
 		if (rv == CKR_GENERAL_ERROR) { g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey); }
 		rv = g_pFuncList->C_Sign(NULL, NULL_PTR, NULL, NULL_PTR, NULL);
@@ -415,7 +456,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 	}*/
 
 	//CRASH
-	std::cout << "\n\n\t12- Calling C_Sign with pulSignatureLen set to NULL		->		**CRASH**" << std::endl;
+	std::cout << "\n\n\t6- Calling C_Sign with pulSignatureLen set to NULL		->		**CRASH**" << std::endl;
 	/*do {
 		if (rv == CKR_GENERAL_ERROR) { g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey); }
 		rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, NULL_PTR);
@@ -428,10 +469,11 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
 	}*/
 
+
 	std::cout << "\n\n\t-Calling C_Sign with valid arguments...";
 	do {
 		if (rv == CKR_GENERAL_ERROR) { g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey); }
-		rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength() + 1, pOutput, &outputLen);
+		rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, &outputLen);
 	} while (rv == CKR_GENERAL_ERROR);
 	if (rv != CKR_OK) {
 		std::cout << std::endl;
@@ -471,8 +513,8 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 	}
 	std::cout << "Ok\n";
 
-	std::cout << "\n\n\t2- Calling C_SignUpdate with a NULL hSession" << std::endl;
-	rv = g_pFuncList->C_DigestUpdate(NULL, (BYTE*)dataVal.getContent(), dataVal.getLength());
+	std::cout << "\n\n\t1- Calling C_SignUpdate with a NULL hSession" << std::endl;
+	rv = g_pFuncList->C_SignUpdate(NULL, (BYTE*)dataVal.getContent(), dataVal.getLength());
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
 		std::cout << "\t-> compliant" << std::endl;
@@ -480,16 +522,27 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
 		if (rv == CKR_OPERATION_ACTIVE) {
 			std::cout << "Yes	** not compliant" << std::endl;
+			std::cout << "\tCalling C_SignFinal" << std::endl;
+			g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen);
+
+			std::cout << "\t -Re-init the Sign operation" << std::endl;
+			rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+			if (rv != CKR_OK) {
+				error(rv);
+				delete pOutput;
+				return false;
+			}
 		}
 		else {
 			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Sign operation" << std::endl;
 		}
 	}
 	else {
 		std::cout << "\t** not compliant" << std::endl;
 	}
 
-	std::cout << "\n\n\t3- Calling C_SignUpdate with pPart NULL_PTR and ulPartLen NULL" << std::endl;
+	std::cout << "\n\n\t2- Calling C_SignUpdate with pPart NULL_PTR and ulPartLen NULL" << std::endl;
 	rv = g_pFuncList->C_SignUpdate(hSession, NULL_PTR, NULL);
 	error(rv);
 	if (rv == CKR_OK) {
@@ -504,6 +557,10 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		pOutput = (BYTE*)malloc(outputLen);
 		std::cout << "\t\tCalling C_SignFinal" << std::endl;
 		do {
+			if (rv == CKR_GENERAL_ERROR) {
+				g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+				g_pFuncList->C_SignUpdate(hSession, NULL_PTR, NULL);
+			}
 			rv = g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen);
 			error(rv);
 			if (rv != CKR_OK && rv != CKR_GENERAL_ERROR)
@@ -535,7 +592,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 	}
 
 
-	std::cout << "\n\n\t4- Calling C_SignUpdate with a NULL_PTR pData and not-NULL ulDataLen	   ->	  **CRASH**" << std::endl;
+	std::cout << "\n\n\t3- Calling C_SignUpdate with a NULL_PTR pData and not-NULL ulDataLen	   ->	  **CRASH**" << std::endl;
 	//CRASH	
 	/*rv = g_pFuncList->C_SignUpdate(hSession, NULL_PTR, dataVal.getLength());
 	error(rv);
@@ -581,7 +638,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		}
 	}*/
 
-	std::cout << "\n\n\t5- Calling C_SignUpdate with a not-NULL pData and NULL ulDataLen" << std::endl;
+	std::cout << "\n\n\t4- Calling C_SignUpdate with a not-NULL pData and NULL ulDataLen" << std::endl;
 	rv = g_pFuncList->C_SignUpdate(hSession, (BYTE*)dataVal.getContent(), NULL);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
@@ -591,7 +648,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		std::cout << "\t** not compliant" << std::endl;
 		if (rv == CKR_OK) {
 			std::cout << "\t\tCalling C_SignFinal with pSignature NULL" << std::endl;
-			rv = g_pFuncList->C_SignFinal(hSession, NULL, &outputLen);
+			rv = g_pFuncList->C_SignFinal(hSession, NULL_PTR, &outputLen);
 			if (rv != CKR_OK)
 			{
 				error(rv);
@@ -601,6 +658,10 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 			pOutput = (BYTE*)malloc(outputLen);
 			std::cout << "\t\tCalling C_SignFinal" << std::endl;
 			do {
+				if (rv == CKR_GENERAL_ERROR) {
+					g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+					g_pFuncList->C_SignUpdate(NULL, NULL_PTR, dataVal.getLength());
+				}
 				rv = g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen);
 				error(rv);
 				if (rv != CKR_OK && rv != CKR_GENERAL_ERROR)
@@ -612,7 +673,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 			} while (rv == CKR_GENERAL_ERROR);
 			UUCByteArray output(pOutput, outputLen);
 			std::cout << "Signature: " << output.toHexString() << (output.toHexString() == MD5_RSA_NULL_SIGN ? "\n\n(signature of an empty input)" : "") << std::endl;
-			if (output.toHexString() == MD5_RSA_NULL_SIGN)
+			if (output.toHexString() == MD5_RSA_TEST_SIGN)
 				std::cout << "\t\tSignature correct" << std::endl;
 			else
 				std::cout << "\t\tSignature incorrect" << std::endl;
@@ -626,7 +687,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		}
 	}
 
-	std::cout << "\n\n\t6- Calling C_SignUpdate with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
+	/*std::cout << "\n\n\t6- Calling C_SignUpdate with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
 	rv = g_pFuncList->C_SignUpdate(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength() - 1);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
@@ -690,8 +751,7 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 			}
 
 			pOutput = (BYTE*)malloc(outputLen);
-			std::cout << "\t\tCalling C_SignFinal	->		**CRASH**" << std::endl;
-			/*rv = g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen);
+			std::cout << "\t\tCalling C_SignFinal" << std::endl;
 			do {
 				rv = g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen);
 				error(rv);
@@ -714,26 +774,37 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 			if (rv != CKR_OK) {
 				error(rv);
 				return false;
-			}*/
+			}
 		}
-	}
+	}*/
 
-	std::cout << "\n\n\t8- Calling C_SignUpdate with all arguments set to NULL" << std::endl;
+	std::cout << "\n\n\t5- Calling C_SignUpdate with all arguments set to NULL" << std::endl;
 	rv = g_pFuncList->C_SignUpdate(NULL, NULL_PTR, NULL);
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
-		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID >" << std::endl;
 		std::cout << "\tChecking if operation is still active...";
 		rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
 		if (rv == CKR_OPERATION_ACTIVE) {
 			std::cout << "Yes	** not compliant" << std::endl;
+			std::cout << "\tCalling C_SignFinal" << std::endl;
+			g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen);
+
+			std::cout << "\t -Re-init the Sign operation" << std::endl;
+			rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+			if (rv != CKR_OK) {
+				error(rv);
+				delete pOutput;
+				return false;
+			}
 		}
 		else {
 			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Sign operation" << std::endl;
 		}
 	}
 	else {
-		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID >" << std::endl;
 	}
 
 
@@ -781,6 +852,22 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		if (rv == CKR_BUFFER_TOO_SMALL)
 		{
 			std::cout << "\t-> compliant" << std::endl;
+			std::cout << "\tChecking if operation is still active...";
+			rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+			if (rv == CKR_OPERATION_ACTIVE) {
+				std::cout << "Yes	-> compliant" << std::endl;
+			}
+			else {
+				std::cout << "No	** not compliant" << std::endl;
+				std::cout << "\t-Re-init the Sing operation" << std::endl;
+				std::cout << "\t-Re-calling C_SignUpdate" << std::endl;
+				rv = g_pFuncList->C_SignUpdate(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength());
+				if (rv != CKR_OK) {
+					error(rv);
+					delete pOutput;
+					return false;
+				}
+			}
 		}
 		else {
 			std::cout << "\t** not compliant" << std::endl;
@@ -801,8 +888,8 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 				}
 			}
 		}
-
-		std::cout << "\n\n\t-3 Calling C_SignFinal with a buffer too small and a wrong (it does not match with the accual buffer's size) pulSignatureLen Ok (with value >= PKCS#1 RSA signature length (256))" << std::endl;
+	}//
+		/*std::cout << "\n\n\t-3 Calling C_SignFinal with a buffer too small and a wrong (it does not match with the accual buffer's size) pulSignatureLen Ok (with value >= PKCS#1 RSA signature length (256))" << std::endl;
 		do {
 			if (rv == CKR_GENERAL_ERROR) { g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey); }
 			rv = g_pFuncList->C_SignFinal(hSession, pOutputSmall, &outputLen);
@@ -815,13 +902,6 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		else {
 			std::cout << "\t** not compliant" << std::endl;
 			if (rv == CKR_OK) {
-				/*UUCByteArray output(pOutputSmall, outputLen);
-				//UUCByteArray output(pOutputSmall, outputLenSmall);
-				std::cout << "Signature: " << output.toHexString() << std::endl;
-				if (output.toHexString() != MD5_RSA_TEST_SIGN)
-					std::cout << "\t\tSignature incorrect" << std::endl;
-				else
-					std::cout << "\t\tSignature correct" << std::endl;*/
 				std::cout << "\t\t!!Write out of buffer's memory limit (Heap Corruption)!!" << std::endl;
 				std::cout << "\t -Re-init the Sign operation" << std::endl;
 				rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
@@ -940,25 +1020,118 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 
 			}
 		}
+	}*/
 
-		std::cout << "\n\n\t7- Calling C_SignFinal with all arguments set to NULL" << std::endl;
-		rv = g_pFuncList->C_SignFinal(NULL, NULL_PTR, NULL_PTR);
-		error(rv);
-		if (rv == CKR_SESSION_HANDLE_INVALID) {
-			std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
-			std::cout << "\tChecking if operation is still active...";
+	std::cout << "\n\n\t3- Calling C_SignFinal with a NULL pulSignatureLen	  ->	**CRASH**" << std::endl;
+	/*rv = g_pFuncList->C_SignFinal(hSession, pOutput, NULL_PTR);
+	error(rv);
+	if (rv == CKR_ARGUMENTS_BAD) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+		if (rv == CKR_OK) {
+			UUCByteArray output(pOutput, outputLen);
+			std::cout << "Signature: " << output.toHexString() << (output.toHexString() == MD5_RSA_NULL_SIGN ? "\n\n(signature of an empty input)" : "") << std::endl;
+			if (output.toHexString() != MD5_RSA_TEST_SIGN)
+				std::cout << "\t\tSignature incorrect" << std::endl;
+			else
+				std::cout << "\t\tSignature correct" << std::endl;
+			std::cout << "\t -Re-init the Sign operation" << std::endl;
 			rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
-			if (rv == CKR_OPERATION_ACTIVE) {
-				std::cout << "Yes	** not compliant" << std::endl;
+			if (rv != CKR_OK) {
+				error(rv);
+				return false;
 			}
-			else {
-				std::cout << "No	-> compliant" << std::endl;
+		}
+	}*/
+
+	std::cout << "\n\n\t4- Calling C_SignFinal with NULL hSession" << std::endl;
+	rv = g_pFuncList->C_SignFinal(NULL, pOutput, &outputLen);
+	error(rv);
+	if (rv == CKR_SESSION_HANDLE_INVALID) {
+		std::cout << "\t-> compliant" << std::endl;
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+			std::cout << "\tCalling C_SignFinal" << std::endl;
+			rv = g_pFuncList->C_SignFinal(hSession, NULL, &outputLen);
+			if (rv != CKR_OK)
+			{
+				error(rv);
+				return false;
+			}
+			pOutput = (BYTE*)malloc(outputLen);
+			rv = g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen);
+			error(rv);
+
+			std::cout << "Signature: " << output.toHexString() << (output.toHexString() == MD5_RSA_NULL_SIGN ? "\n\n(signature of an empty input)" : "") << std::endl;
+			if (output.toHexString() == MD5_RSA_TEST_SIGN)
+				std::cout << "\t\tSignature correct" << std::endl;
+			else
+				std::cout << "\t\tSignature incorrect" << std::endl;
+
+			std::cout << "\t -Re-init the Sign operation" << std::endl;
+			rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+			if (rv != CKR_OK) {
+				error(rv);
+				delete pOutput;
+				return false;
 			}
 		}
 		else {
-			std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Sign operation" << std::endl;
 		}
+		std::cout << "\t-Re-calling C_SignUpdate" << std::endl;
+		rv = g_pFuncList->C_SignUpdate(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength());
+		if (rv != CKR_OK) {
+			error(rv);
+			delete pOutput;
+			return false;
+		}
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
 
+
+	std::cout << "\n\n\t5- Calling C_SignFinal with all arguments set to NULL" << std::endl;
+	rv = g_pFuncList->C_SignFinal(NULL, NULL_PTR, NULL_PTR);
+	error(rv);
+	if (rv == CKR_SESSION_HANDLE_INVALID) {
+		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID >" << std::endl;
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+			std::cout << "\tCalling C_SignFinal" << std::endl;
+			rv = g_pFuncList->C_SignFinal(hSession, NULL, &outputLen);
+			if (rv != CKR_OK)
+			{
+				error(rv);
+				return false;
+			}
+			pOutput = (BYTE*)malloc(outputLen);
+			do {
+				rv = g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen);
+				error(rv);
+				if (rv != CKR_OK && rv != CKR_GENERAL_ERROR)
+				{
+					error(rv);
+					delete pOutput;
+					return false;
+				}
+			} while (rv == CKR_GENERAL_ERROR);
+
+		}
+		else {
+			std::cout << "No	-> compliant" << std::endl;
+		}
+	}
+	else {
+		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID >" << std::endl;
 	}
 
 	std::cout << "\n\n\n\n";

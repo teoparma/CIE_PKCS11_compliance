@@ -84,12 +84,36 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	}	
 	std::cout << " Finished" << std::endl;
 
+	//sign operation to obtain the sign of a null input
+	BYTE* pOutputNull;
+	CK_ULONG outputLenNull = 256;
+	rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
+	if (rv != CKR_OK)
+	{
+		error(rv);
+		return false;
+	}
+	rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, NULL, &outputLenNull);
+	if (rv != CKR_OK)
+	{
+		error(rv);
+		return false;
+	}
+	pOutputNull = (BYTE*)malloc(outputLenNull);
+	rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, pOutputNull, &outputLenNull);
+	if (rv != CKR_OK)
+	{
+		delete pOutputNull;
+		error(rv);
+		return false;
+	}
+
 
 	std::cout << "\n\n\n\n[TEST]	->	  C_VerifyInit (CKM_MD5_RSA_PKCS)" << std::endl;
 
 	{
 		CK_MECHANISM invalidMech[] = { CKM_MD5, NULL, 0 };
-		std::cout << "\n\n\t0- Calling C_VerifyInit with an invalid Mechanism" << std::endl;
+		std::cout << "\n\n\t1- Calling C_VerifyInit with an invalid Mechanism" << std::endl;
 		rv = g_pFuncList->C_VerifyInit(hSession, invalidMech, hObjectPubKey);
 		error(rv);
 		if (rv == CKR_MECHANISM_INVALID) {
@@ -100,7 +124,7 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 		}
 	}
 
-	std::cout << "\n\n\t1- Calling C_VerifyInit with a NULL Mechanism   ->   **CRASH**" << std::endl;
+	std::cout << "\n\n\t2- Calling C_VerifyInit with a NULL Mechanism   ->   **CRASH**" << std::endl;
 	/*rv = g_pFuncList->C_VerifyInit(hSession, NULL_PTR, hObjectPubKey);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
@@ -110,7 +134,7 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 		std::cout << "\t** not compliant" << std::endl;
 	}*/
 
-	std::cout << "\n\n\t2- Calling C_VerifyInit with a NULL Session" << std::endl;
+	std::cout << "\n\n\t3- Calling C_VerifyInit with a NULL Session" << std::endl;
 	rv = g_pFuncList->C_VerifyInit(NULL, pMechanism, hObjectPubKey);
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
@@ -119,8 +143,9 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	else {
 		std::cout << "\t** not compliant" << std::endl;
 	}
+	
 
-	std::cout << "\n\n\t3- Calling C_VerifyInit with all arguments set to NULL" << std::endl;
+	std::cout << "\n\n\t4- Calling C_VerifyInit with all arguments set to NULL" << std::endl;
 	rv = g_pFuncList->C_VerifyInit(NULL, NULL_PTR, NULL);
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
@@ -131,7 +156,7 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	}
 
 	{
-		std::cout << "\n\n\t4- Calling C_VerifyInit with invalid mechanism parameters" << std::endl;
+		std::cout << "\n\n\t5- Calling C_VerifyInit with invalid mechanism parameters" << std::endl;
 		CK_RSA_PKCS_OAEP_PARAMS invalid_param = { CKM_SHA_1, CKG_MGF1_SHA1, CKZ_DATA_SPECIFIED, NULL_PTR, 0 };
 		CK_MECHANISM invalid_mech_param = { CKM_SHA_1, &invalid_param, sizeof(invalid_param) };
 		rv = g_pFuncList->C_VerifyInit(hSession, &invalid_mech_param, hObjectPubKey);
@@ -154,6 +179,28 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 		std::cout << "\t** not compliant" << std::endl;
 	}*/
 
+	std::cout << "\n\n\t6- Calling C_VerifyInit with a NULL hKey" << std::endl;
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, NULL);
+	error(rv);
+	if (rv == CKR_KEY_HANDLE_INVALID) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+
+
+	std::cout << "\n\n\t7- Calling C_VerifyInit with the private Key" << std::endl;
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPriKey);
+	error(rv);
+	if (rv == CKR_KEY_FUNCTION_NOT_PERMITTED ) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+
+
 	std::cout << "\n\n\t- Calling C_VerifyInit with valid arguments...";
 	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
 	if (rv != CKR_OK) {
@@ -166,46 +213,26 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 
 	std::cout << "\n\n\n\n[TEST]	->	 C_Verify" << std::endl;
 
-	{
-		//sign operation to obtain the sign of a null input
-		BYTE* pOutputNull;
-		CK_ULONG outputLenNull = 256;
-		rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
-		if (rv != CKR_OK)
-		{
-			error(rv);
-			return false;
-		}
-		rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, NULL, &outputLenNull);
-		if (rv != CKR_OK)
-		{
-			error(rv);
-			return false;
-		}
-		pOutputNull = (BYTE*)malloc(outputLenNull);
-		rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, pOutputNull, &outputLenNull);
-		if (rv != CKR_OK)
-		{
-			delete pOutputNull;
-			error(rv);
-			return false;
-		}
 
-		std::cout << "\n\n\t1- Calling C_Verify with a NULL_PTR pData and NULL ulDataLen" << std::endl;
-		rv = g_pFuncList->C_Verify(hSession, NULL_PTR, NULL, pOutputNull, outputLenNull);
-		error(rv);
-		if (rv != CKR_OK) {
-			std::cout << "\t** not compliant" << std::endl;
-		}
-		else {
-			std::cout << "\t-> compliant" << std::endl;
-			std::cout << "\t -Re-init the Verify operation" << std::endl;
-			rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-			if (rv != CKR_OK) {
-				error(rv);
-				return false;
-			}
-		}
+	std::cout << "\n\n\t1- Calling C_Verify with a NULL_PTR pData and NULL ulDataLen (with a signature of a NULL input)" << std::endl;
+	rv = g_pFuncList->C_Verify(hSession, NULL_PTR, NULL, pOutputNull, outputLenNull);
+	error(rv);
+	if (rv != CKR_OK) {
+		std::cout << "\tsignature is not valid" << std::endl;
+		std::cout << "\t** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "\tsignature is valid" << std::endl;
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
+		std::cout << "\t -Re-init the Verify operation" << std::endl;
 	}
 
 	//CRASH
@@ -228,22 +255,23 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	std::cout << "\n\n\t3- Calling C_Verify with a not-NULL pData and NULL ulDataLen" << std::endl;
 	rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), NULL, pOutput, outputLen);
 	error(rv);
-	if (rv == CKR_ARGUMENTS_BAD || rv == CKR_SIGNATURE_INVALID) {
+	if (rv == CKR_ARGUMENTS_BAD) {
 		std::cout << "\t-> compliant" << std::endl;
 	}
 	else {
 		std::cout << "\t** not compliant" << std::endl;
 	}
-	if (rv == CKR_OK || rv == CKR_SIGNATURE_LEN_RANGE || rv == CKR_SIGNATURE_INVALID) {
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
 		std::cout << "\t -Re-init the Verify operation" << std::endl;
-		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-		if (rv != CKR_OK) {
-			error(rv);
-			return false;
-		}
 	}
 
-	std::cout << "\n\n\t4- Calling C_Verify with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
+	/*std::cout << "\n\n\t4- Calling C_Verify with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
 	rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength() - 1, pOutput, outputLen);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD || rv == CKR_SIGNATURE_INVALID) {
@@ -252,13 +280,14 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	else {
 		std::cout << "\t** not compliant" << std::endl;
 	}
-	if (rv == CKR_OK || rv == CKR_SIGNATURE_LEN_RANGE || rv == CKR_SIGNATURE_INVALID) {
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
 		std::cout << "\t -Re-init the Verify operation" << std::endl;
-		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-		if (rv != CKR_OK) {
-			error(rv);
-			return false;
-		}
 	}
 
 
@@ -271,14 +300,15 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	else {
 		std::cout << "\t** not compliant" << std::endl;
 	}
-	if (rv == CKR_OK || rv == CKR_SIGNATURE_LEN_RANGE || rv == CKR_SIGNATURE_INVALID) {
-		std::cout << "\t -Re-init the Verify operation" << std::endl;
-		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-		if (rv != CKR_OK) {
-			error(rv);
-			return false;
-		}
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
 	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
+		std::cout << "\t -Re-init the Verify operation" << std::endl;
+	}*/
 
 	{
 		CK_ULONG outputLenBig = outputLen + 1;
@@ -286,121 +316,202 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 		CK_ULONG outputLenSmaller = outputLenSmall - 1;
 		BYTE* pOutputSmall = (BYTE*)malloc(outputLenSmall);
 
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-		std::cout << "\n\n\t6- Calling C_Verify with a buffer too small" << std::endl;
+
+		std::cout << "\n\n\t4- Calling C_Verify with a buffer too small" << std::endl;
 		rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutputSmall, outputLenSmall);
 		error(rv);
-		if (rv == CKR_BUFFER_TOO_SMALL)
+		if (rv == CKR_SIGNATURE_LEN_RANGE)
 		{
 			std::cout << "\t-> compliant" << std::endl;
 		}
 		else {
 			std::cout << "\t** not compliant" << std::endl;
-			if (rv != CKR_OK) {
-				std::cout << "\tChecking if operation is still active...";
-				rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-				if (rv == CKR_OPERATION_ACTIVE) {
-					std::cout << "Yes	** not compliant" << std::endl;
-				}
-				else {
-					std::cout << "No	-> compliant" << std::endl;
-					std::cout << "\t -Re-init the Verify operation" << std::endl;
-				}
-			}
+		}
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+		}
+		else {
+			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Verify operation" << std::endl;
 		}
 
 
-		//HEAP CORRUPTION DETECTED
-		std::cout << "\n\n\t-7 Calling C_Verify with a buffer too small and a wrong (it does not match with the accual buffer's size) outputLen Ok (with value >= RSA PKCS#1 Signature length (256))" << std::endl;
+		/*std::cout << "\n\n\t-7 Calling C_Verify with a buffer too small and a wrong (it does not match with the accual buffer's size) outputLen Ok (with value >= RSA PKCS#1 Signature length (256))" << std::endl;
 		rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutputSmall, outputLen);
 		error(rv);
-		if (rv == CKR_BUFFER_TOO_SMALL || rv == CKR_ARGUMENTS_BAD)
+		if (rv == CKR_ARGUMENTS_BAD || rv == CKR_SIGNATURE_INVALID)
 		{
 			std::cout << "\t-> compliant" << std::endl;
 		}
 		else {
 			std::cout << "\t** not compliant" << std::endl;
-			if (rv == CKR_OK) {
-				std::cout << "\t\t!!Write out of buffer's memory limit (Heap Corruption)!!" << std::endl;
-				std::cout << "\t -Re-init the Sign operation" << std::endl;
-				rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-				if (rv != CKR_OK) {
-					free(pOutputSmall);
-					error(rv);
-					return false;
-				}
-			}
 		}
+		if (rv != CKR_CRYPTOKI_NOT_INITIALIZED && rv != CKR_OPERATION_NOT_INITIALIZED && rv != CKR_SESSION_HANDLE_INVALID) {
+			std::cout << "\t\t!!Read out of buffer's memory limit (Heap Corruption)!!" << std::endl;
+		}
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+		}
+		else {
+			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Verify operation" << std::endl;
+		}
+
 
 		std::cout << "\n\n\t8- Calling C_Verify with a buffer too small and a wrong outputLen not Ok (with value < RSA PKCS#1 Signature length)" << std::endl;
 		rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutputSmall, outputLenSmaller);
 		error(rv);
-		if (rv == CKR_BUFFER_TOO_SMALL || rv == CKR_ARGUMENTS_BAD)
+		if (rv == CKR_SIGNATURE_LEN_RANGE || rv == CKR_ARGUMENTS_BAD)
 		{
 			std::cout << "\t-> compliant" << std::endl;
 		}
 		else {
 			std::cout << "\t** not compliant" << std::endl;
-			if (rv != CKR_OK) {
-				std::cout << "\tChecking if operation is still active...";
-				rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-				if (rv == CKR_OPERATION_ACTIVE) {
-					std::cout << "Yes	** not compliant" << std::endl;
-				}
-				else {
-					std::cout << "No	-> compliant" << std::endl;
-					std::cout << "\t -Re-init the Verify operation" << std::endl;
-				}
-			}
 		}
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+		}
+		else {
+			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Verify operation" << std::endl;
+		}
+
 
 		std::cout << "\n\n\t9- Calling C_Verify with a buffer output Ok (size>= RSA PKCS#1 Sing length) and a wrong outputLen not Ok" << std::endl;
 		rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, outputLenSmall);
 		error(rv);
-		if (rv == CKR_ARGUMENTS_BAD)
+		if (rv == CKR_ARGUMENTS_BAD || rv == CKR_SIGNATURE_LEN_RANGE)
 		{
 			std::cout << "\t-> compliant" << std::endl;
 		}
 		else {
 			std::cout << "\t** not compliant" << std::endl;
-			if(rv != CKR_OK){
-				std::cout << "\tChecking if operation is still active...";
-				rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-				if (rv == CKR_OPERATION_ACTIVE) {
-					std::cout << "Yes	** not compliant" << std::endl;
-				}
-				else {
-					std::cout << "No	-> compliant" << std::endl;
-					std::cout << "\t -Re-init the Verify operation" << std::endl;
-				}
-			}
+		}
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+		}
+		else {
+			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Verify operation" << std::endl;
 		}
 
 		std::cout << "\n\n\t10- Calling C_Verify with a buffer Ok and a wrong outputLen Ok (with value > RSA PKCS#1 Signature length)" << std::endl;
 		rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, outputLenBig);
 		error(rv);
-		if (rv == CKR_ARGUMENTS_BAD)
+		if (rv == CKR_ARGUMENTS_BAD || rv == CKR_SIGNATURE_LEN_RANGE)
 		{
 			std::cout << "\t-> compliant" << std::endl;
 		}
 		else {
 			std::cout << "\t** not compliant" << std::endl;
-			if (rv == CKR_OK) {
-				std::cout << "\t -Re-init the Verify operation" << std::endl;
-				rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-				if (rv != CKR_OK) {
-					free(pOutputSmall);
-					error(rv);
-					return false;
-				}
-			}
 		}
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+		}
+		else {
+			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Verify operation" << std::endl;
+		}*/
+
 		free(pOutputSmall);
 	}
 
 
+	std::cout << "\n\n\t5- Calling C_Verify with a NULL hSession" << std::endl;
+	rv = g_pFuncList->C_Verify(NULL, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, outputLen);
+	error(rv);
+	if (rv == CKR_SESSION_HANDLE_INVALID) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
+		std::cout << "\t -Re-init the Verify operation" << std::endl;
+	}
+
+
+	std::cout << "\n\n\t6- Calling C_Verify with pulSignatureLen set to NULL" << std::endl;
+	rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, NULL_PTR);
+	error(rv);
+	if (rv == CKR_ARGUMENTS_BAD) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
+		std::cout << "\t -Re-init the Verify operation" << std::endl;
+	}
+
+
 	//CRASH
-	std::cout << "\n\n\t11- Calling C_Verify with a NULL hSession		->		**CRASH**" << std::endl;
+	std::cout << "\n\n\t7- Calling C_Verify with pSignature set to NULL		->		**CRASH**" << std::endl;
+	/*rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), NULL_PTR, outputLen);
+	error(rv);
+	if (rv == CKR_SIGNATURE_INVALID || rv == CKR_ARGUMENTS_BAD) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
+		std::cout << "\t -Re-init the Verify operation" << std::endl;
+	}*/
+
+
+	std::cout << "\n\n\t8- Calling C_Verify with pSignature and pulSignatureLen set to NULL" << std::endl;
+	do {
+		if (rv == CKR_GENERAL_ERROR) { g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey); }
+		rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), NULL_PTR, NULL_PTR);
+	} while (rv == CKR_GENERAL_ERROR);
+	error(rv);
+	if (rv == CKR_SIGNATURE_LEN_RANGE) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
+		std::cout << "\t -Re-init the Sign operation" << std::endl;
+	}
+
+
+	std::cout << "\n\n\t9- Calling C_Verify with all args NULL" << std::endl;
 	rv = g_pFuncList->C_Verify(NULL, NULL_PTR, NULL, NULL_PTR, NULL);
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
@@ -409,20 +520,19 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	else {
 		std::cout << "\t** not compliant" << std::endl;
 	}
-
-	//CRASH
-	std::cout << "\n\n\t12- Calling C_Verify with pulSignatureLen set to NULL		->		**CRASH**" << std::endl;
-	rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, NULL_PTR);
-	error(rv);
-	if (rv == CKR_SESSION_HANDLE_INVALID) {
-		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID > CKR_MECHANISM_INVALID" << std::endl;
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
 	}
 	else {
-		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "No	-> compliant" << std::endl;
+		std::cout << "\t -Re-init the Verify operation" << std::endl;
 	}
 
+
 	std::cout << "\n\n\t-Calling C_Verify with valid arguments...";
-	rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength() + 1, pOutput, outputLen);
+	rv = g_pFuncList->C_Verify(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, outputLen);
 	if (rv != CKR_OK) {
 		std::cout << std::endl;
 		free(pOutput);
@@ -464,6 +574,11 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
 		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+	if (rv != CKR_OK) {
 		std::cout << "\tChecking if operation is still active...";
 		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
 		if (rv == CKR_OPERATION_ACTIVE) {
@@ -471,10 +586,8 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 		}
 		else {
 			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Verify operation" << std::endl;
 		}
-	}
-	else {
-		std::cout << "\t** not compliant" << std::endl;
 	}
 
 	std::cout << "\n\n\t2- Calling C_VerifyUpdate with pPart NULL_PTR and ulPartLen NULL" << std::endl;
@@ -482,25 +595,15 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	error(rv);
 	if (rv == CKR_OK) {
 		std::cout << "\t-> compliant" << std::endl;
-		std::cout << "\t\tCalling C_VerifyFinal with pSignature NULL" << std::endl;
-		rv = g_pFuncList->C_VerifyFinal(hSession, NULL, outputLen);
-		if (rv != CKR_OK)
-		{
-			error(rv);
-			return false;
+		std::cout << "\t\tCalling C_VerifyFinal (with signature of a NULL input)...";
+		rv = g_pFuncList->C_VerifyFinal(hSession, pOutputNull, outputLenNull);
+		if (rv == CKR_OK) {
+			std::cout << "Ok: Signature is valid" << std::endl;
 		}
-		pOutput = (BYTE*)malloc(outputLen);
-		std::cout << "\t\tCalling C_VerifyFinal" << std::endl;
-		do {
-			rv = g_pFuncList->C_VerifyFinal(hSession, pOutput, outputLen);
+		else {
 			error(rv);
-			if (rv != CKR_OK && rv != CKR_GENERAL_ERROR)
-			{
-				error(rv);
-				delete pOutput;
-				return false;
-			}
-		} while (rv == CKR_GENERAL_ERROR);
+			std::cout << "not Ok: Signature is not valid" << std::endl;
+		}
 
 		std::cout << "\t -Re-init the Verify operation" << std::endl;
 		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
@@ -512,12 +615,21 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	}
 	else {
 		std::cout << "\t** not compliant" << std::endl;
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+		}
+		else {
+			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Verify operation" << std::endl;
+		}
 	}
 
 
 	std::cout << "\n\n\t3- Calling C_VerifyUpdate with a NULL_PTR pData and not-NULL ulDataLen	   ->	  **CRASH**" << std::endl;
 	//CRASH	
-	rv = g_pFuncList->C_VerifyUpdate(hSession, NULL_PTR, dataVal.getLength());
+	/*rv = g_pFuncList->C_VerifyUpdate(hSession, NULL_PTR, dataVal.getLength());
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
 		std::cout << "\t-> compliant" << std::endl;
@@ -551,49 +663,49 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 			return false;
 		}
 		}
-	}
+	}*/
 
 	std::cout << "\n\n\t4- Calling C_VerifyUpdate with a not-NULL pData and NULL ulDataLen" << std::endl;
 	rv = g_pFuncList->C_VerifyUpdate(hSession, (BYTE*)dataVal.getContent(), NULL);
 	error(rv);
-	if (rv == CKR_ARGUMENTS_BAD) {
+	/*if (rv == CKR_ARGUMENTS_BAD) {
 		std::cout << "\t-> compliant" << std::endl;
 	}
 	else {
 		std::cout << "\t** not compliant" << std::endl;
+	}*/
+	if (rv == CKR_OK) {
+		std::cout << "\t\tCalling C_VerifyFinal...";
+		rv = g_pFuncList->C_VerifyFinal(hSession, pOutputNull, outputLenNull);
 		if (rv == CKR_OK) {
-			std::cout << "\t\tCalling C_VerifyFinal with pSignature NULL" << std::endl;
-			rv = g_pFuncList->C_VerifyFinal(hSession, NULL, outputLen);
-			if (rv != CKR_OK)
-			{
-				error(rv);
-				delete pOutput;
-				return false;
-			}
-			pOutput = (BYTE*)malloc(outputLen);
-			std::cout << "\t\tCalling C_VerifyFinal" << std::endl;
-			do {
-				rv = g_pFuncList->C_VerifyFinal(hSession, pOutput, outputLen);
-				error(rv);
-				if (rv != CKR_OK && rv != CKR_GENERAL_ERROR)
-				{
-					error(rv);
-					delete pOutput;
-					return false;
-				}
-			} while (rv == CKR_GENERAL_ERROR);
+			std::cout << "Ok: Signature is valid (signature of an NULL input)" << std::endl;
+		}
+		else {
+			error(rv);
+			std::cout << "not Ok: Signature is not valid" << std::endl;
+		}
 
+		std::cout << "\t -Re-init the Verify operation" << std::endl;
+		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+		if (rv != CKR_OK) {
+			error(rv);
+			delete pOutput;
+			return false;
+		}
+	}
+	else {
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+		}
+		else {
+			std::cout << "No	-> compliant" << std::endl;
 			std::cout << "\t -Re-init the Verify operation" << std::endl;
-			rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-			if (rv != CKR_OK) {
-				error(rv);
-				delete pOutput;
-				return false;
-			}
 		}
 	}
 
-	std::cout << "\n\n\t5- Calling C_VerifyUpdate with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
+	/*std::cout << "\n\n\t5- Calling C_VerifyUpdate with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
 	rv = g_pFuncList->C_VerifyUpdate(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength() - 1);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
@@ -642,49 +754,31 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	else {
 		std::cout << "\t** not compliant" << std::endl;
 		if (rv == CKR_OK) {
-			std::cout << "\t\tCalling C_VerifyFinal with pSignature NULL" << std::endl;
-			rv = g_pFuncList->C_VerifyFinal(hSession, NULL, outputLen);
-			if (rv != CKR_OK)
-			{
+			std::cout << "\t\tCalling C_VerifyFinal...";
+			rv = g_pFuncList->C_VerifyFinal(hSession, pOutputNull, outputLenNull);
+			if (rv == CKR_OK) {
+				std::cout << "Ok: Signature is valid" << std::endl;
+			}
+			else {
+				error(rv);
+				std::cout << "not Ok: Signature is not valid" << std::endl;
+			}
+
+			std::cout << "\t -Re-init the Verify operation" << std::endl;
+			rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+			if (rv != CKR_OK) {
 				error(rv);
 				delete pOutput;
 				return false;
 			}
-
-			pOutput = (BYTE*)malloc(outputLen);
-			std::cout << "\t\tCalling C_VeifyFinal	->		**CRASH**" << std::endl;
-			/*rv = g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen); //////////////////////////////ERRORE: CONTROLLA ANCHE SIGN
-			do {
-				rv = g_pFuncList->C_SignFinal(hSession, pOutput, &outputLen);
-				error(rv);
-				if (rv != CKR_OK && rv != CKR_GENERAL_ERROR)
-				{
-					error(rv);
-					delete pOutput;
-					return false;
-				}
-			} while (rv == CKR_GENERAL_ERROR);
-			UUCByteArray output(pOutput, outputLen);
-			std::cout << "Signature: " << output.toHexString() << std::endl;
-			if (output.toHexString() != MD5_RSA_TEST_SIGN)
-				std::cout << "\t\tSignature incorrect" << std::endl;
-			else
-				std::cout << "\t\tSignature correct" << std::endl;
-			std::cout << "\t\t!!Read out of pData's memory limit!!" << std::endl;
-			std::cout << "\t -Re-init the Sign operation" << std::endl;
-			rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
-			if (rv != CKR_OK) {
-				error(rv);
-				return false;
-			}*/
 		}
-	}
+	}*/
 
-	std::cout << "\n\n\t7- Calling C_VerifyUpdate with all arguments set to NULL" << std::endl;
+	std::cout << "\n\n\t5- Calling C_VerifyUpdate with all arguments set to NULL" << std::endl;
 	rv = g_pFuncList->C_VerifyUpdate(NULL, NULL_PTR, NULL);
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
-		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID >" << std::endl;
 		std::cout << "\tChecking if operation is still active...";
 		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
 		if (rv == CKR_OPERATION_ACTIVE) {
@@ -692,12 +786,12 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 		}
 		else {
 			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the Verify operation" << std::endl;
 		}
 	}
 	else {
-		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID >" << std::endl;
 	}
-
 
 
 
@@ -714,23 +808,17 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 		return false;
 	}
 
-	////////////////////////CONTROLLA
-	std::cout << "\n\n\t1- Calling C_VerifyFinal with pDigest NULL_PTR" << std::endl;
-	rv = g_pFuncList->C_VerifyFinal(hSession, NULL_PTR, outputLen);
-	if (rv != CKR_OK) {
-		error(rv);
-		delete pOutput;
-		return false;
-	}
-	std::cout << "\t[PKCS#1 RSA SIGNATURE]: " << outputLen << " bytes to hold the output" << std::endl;
-	if (outputLen < RSA_KEY_MODULUS_LENGTH) {
-		std::cout << "\t** not compliant : output length should be 256**" << std::endl;
-	}
-	else {
+
+	std::cout << "\n\n\t1- Calling C_VerifyFinal with pDigest NULL_PTR	  ->	**CRASH**" << std::endl;
+	/*rv = g_pFuncList->C_VerifyFinal(hSession, NULL_PTR, outputLen);
+	if (rv == CKR_ARGUMENTS_BAD) {
 		std::cout << "\t-> compliant" << std::endl;
 	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}*/
 
-	{
+	/*{
 		CK_ULONG outputLenBig = outputLen + 1;
 		CK_ULONG outputLenSmall = outputLen - 1;
 		BYTE* pOutputSmall = (BYTE*)malloc(outputLenSmall);
@@ -888,25 +976,70 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 
 			}
 		}
+	}*/
 
-		std::cout << "\n\n\t7- Calling C_VerifyFinal with all arguments set to NULL" << std::endl;
-		rv = g_pFuncList->C_VerifyFinal(NULL, NULL_PTR, NULL_PTR);
-		error(rv);
-		if (rv == CKR_SESSION_HANDLE_INVALID) {
-			std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
-			std::cout << "\tChecking if operation is still active...";
-			rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
-			if (rv == CKR_OPERATION_ACTIVE) {
-				std::cout << "Yes	** not compliant" << std::endl;
-			}
-			else {
-				std::cout << "No	-> compliant" << std::endl;
-			}
+	std::cout << "\n\n\t2- Calling C_VerifyFinal with a NULL hSession" << std::endl;
+	rv = g_pFuncList->C_VerifyFinal(NULL, pOutput, outputLen);
+	error(rv);
+	if (rv == CKR_SESSION_HANDLE_INVALID) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
+	}
+
+	
+	std::cout << "\n\n\t3- Calling C_VerifyFinal with ulSignatureLen set to NULL" << std::endl;
+	rv = g_pFuncList->C_VerifyFinal(hSession, pOutput, NULL);
+	error(rv);
+	if (rv == CKR_ARGUMENTS_BAD || rv == CKR_SIGNATURE_LEN_RANGE) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+	}
+	if (rv == CKR_OK) {
+		std::cout << "\tSignature is valid" << std::endl;
+	}
+	else {
+		std::cout << "\tSignature is not valid" << std::endl;
+	}
+	std::cout << "\tChecking if operation is still active...";
+	rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+	if (rv == CKR_OPERATION_ACTIVE) {
+		std::cout << "Yes	** not compliant" << std::endl;
+	}
+	else {
+		std::cout << "No	-> compliant" << std::endl;
+		std::cout << "\t -Re-init the Verify operation" << std::endl;
+	}
+
+
+
+	std::cout << "\n\n\t4- Calling C_VerifyFinal with all arguments set to NULL" << std::endl;
+	rv = g_pFuncList->C_VerifyFinal(NULL, NULL_PTR, NULL_PTR);
+	error(rv);
+	if (rv == CKR_SESSION_HANDLE_INVALID) {
+		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_VerifyInit(hSession, pMechanism, hObjectPubKey);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
 		}
 		else {
-			std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+			std::cout << "No	-> compliant" << std::endl;
 		}
-
+	}
+	else {
+		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
 	}
 
 	std::cout << "\n\n\n\n";

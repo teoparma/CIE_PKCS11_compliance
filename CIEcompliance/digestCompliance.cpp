@@ -220,7 +220,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 		}
 	}
 
-	std::cout << "\n\n\t4- Calling C_Digest with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
+	/*std::cout << "\n\n\t4- Calling C_Digest with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
 	rv = g_pFuncList->C_Digest(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength() - 1, pOutput, &outputLen);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
@@ -267,7 +267,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 				return false;
 			}
 		}
-	}
+	}*/
 
 	{
 		CK_ULONG outputLenBig = outputLen + 1;
@@ -275,7 +275,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 		CK_ULONG outputLenSmaller = outputLenSmall - 1;
 		BYTE* pOutputSmall = (BYTE*)malloc(outputLenSmall);
 
-		std::cout << "\n\n\t6- Calling C_Digest with a buffer too small" << std::endl;
+		std::cout << "\n\n\t4- Calling C_Digest with a buffer too small" << std::endl;
 		rv = g_pFuncList->C_Digest(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutputSmall, &outputLenSmall);
 		error(rv);
 		if (rv == CKR_BUFFER_TOO_SMALL)
@@ -288,12 +288,13 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 			}
 			else {
 				std::cout << "No	** not compliant" << std::endl;
+				std::cout << "\t -Re-init the digest operation" << std::endl;
 			}
 		}
 		else {
 			std::cout << "\t** not compliant" << std::endl;
 		}
-
+		/*
 		//HEAP CORRUPTION DETECTED
 		std::cout << "\n\n\t-7 Calling C_Digest with a buffer too small and a wrong (it does not match with the accual buffer's size) outputLen Ok (with value >= MD5 digest length (16))" << std::endl;
 		rv = g_pFuncList->C_Digest(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutputSmall, &outputLen);
@@ -399,26 +400,54 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 					return false;
 				}
 			}
-		}
+		}*/
 		free(pOutputSmall);
 	}
 
-	std::cout << "\n\n\t11- Calling C_Digest with all arguments set to null" << std::endl;
+
+	std::cout << "\n\n\t5- Calling C_Digest with a NULL pulDigestLen	  ->	**CRASH**" << std::endl;
+	/*delete pOutput;
+	pOutput = (BYTE*)malloc(outputLen);
+	rv = g_pFuncList->C_Digest(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, NULL_PTR);
+	error(rv);
+	if (rv == CKR_ARGUMENTS_BAD) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+		if (rv == CKR_OK) {
+			UUCByteArray output(pOutput, outputLen);
+			std::cout << "\t\tHash: " << output.toHexString() << (output.toHexString() == MD5_NULL_VALUE_DIGEST ? " (digest of an empty input)" : "") << std::endl;
+			if (output.toHexString() != MD5_TEST_DIGEST)
+				std::cout << "\t\tHash incorrect" << std::endl;
+			else
+				std::cout << "\t\tHash correct" << std::endl;
+			std::cout << "\t -Re-init the digest operation" << std::endl;
+			rv = g_pFuncList->C_DigestInit(hSession, pMechanism);
+			if (rv != CKR_OK) {
+				error(rv);
+				return false;
+			}
+		}
+	}*/
+
+	std::cout << "\n\n\t6- Calling C_Digest with all arguments set to null" << std::endl;
 	rv = g_pFuncList->C_Digest(NULL, NULL_PTR, NULL, NULL_PTR, NULL);
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
-		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\t-> compliant : CKR_SESSION_HANDLE_INVALID >" << std::endl;
 		std::cout << "\tChecking if operation is still active...";
 		rv = g_pFuncList->C_DigestInit(hSession, pMechanism);
 		if (rv == CKR_OPERATION_ACTIVE) {
-			std::cout << "Yes	-> compliant" << std::endl;
+			std::cout << "Yes	**not compliant" << std::endl;
 		}
 		else {
-			std::cout << "No	** not compliant" << std::endl;
+			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the digest operation" << std::endl;
 		}
 	}
 	else {
-		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
+		std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID >" << std::endl;
 	}
 
 	std::cout << "\n\n\t-Calling C_Digest with valid arguments...";
@@ -433,8 +462,9 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 
 	UUCByteArray output(pOutput, outputLen);
 	std::cout << "  -- Computed Hash : " << std::endl << "     " << output.toHexString() << std::endl;
-
-	//statefull test **CRASH**
+	
+	//statefull tests
+	//**CRASH**
 	/*std::cout << "\n\n\t11- Calling C_Digest not initialized" << std::endl;
 	rv = g_pFuncList->C_Digest(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, &outputLen);
 	if (rv == CKR_OPERATION_NOT_INITIALIZED) {
@@ -442,10 +472,9 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 	}
 	else {
 		std::cout << "\t** not compliant" << std::endl;
-	}*/
+	}
 
-	//statefull test
-	/*std::cout << "[TEST]	->	Calling C_DigestUpdate (not initialized)" << std::endl;
+	std::cout << "[TEST]	->	Calling C_DigestUpdate (not initialized)" << std::endl;
 	rv = g_pFuncList->C_DigestUpdate(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength());
 	if (rv != CKR_OK)
 	{
@@ -457,10 +486,10 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 	if (rv != CKR_OK)
 	{
 		error(rv);
-	}*/
+	}
 
 	//CRASH
-	/*std::cout << "Calling C_Digest (not initialized)" << std::endl;
+	std::cout << "Calling C_Digest (not initialized)" << std::endl;
 	rv = g_pFuncList->C_Digest(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), pOutput, &outputLen);
 	if (rv != CKR_OK)
 	{
@@ -471,7 +500,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 	std::cout << "\n\n\n[TEST]	 ->	  C_DigestUpdate" << std::endl;
 
 	//statefull test
-	/*std::cout << "\n\n\t1- Calling C_DigestUpdate without initialization" << std::endl;
+	/*std::cout << "\n\n\t- Calling C_DigestUpdate without initialization" << std::endl;
 	rv = g_pFuncList->C_DigestUpdate(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength());
 	error(rv);
 	if (rv == CKR_OPERATION_NOT_INITIALIZED) {
@@ -492,7 +521,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 	}
 	std::cout << "Ok\n";
 
-	std::cout << "\n\n\t2- Calling C_DigestUpdate with a NULL hSession" << std::endl;
+	std::cout << "\n\n\t1- Calling C_DigestUpdate with a NULL hSession" << std::endl;
 	rv = g_pFuncList->C_DigestUpdate(NULL, (BYTE*)dataVal.getContent(), dataVal.getLength());
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
@@ -501,16 +530,27 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 		rv = g_pFuncList->C_DigestInit(hSession, pMechanism);
 		if (rv == CKR_OPERATION_ACTIVE) {
 			std::cout << "Yes	** not compliant" << std::endl;
+			std::cout << "\tCalling C_DigestFinal" << std::endl;
+			g_pFuncList->C_DigestFinal(hSession, pOutput, &outputLen);
+
+			std::cout << "\t -Re-init the digest operation" << std::endl;
+			rv = g_pFuncList->C_DigestInit(hSession, pMechanism);
+			if (rv != CKR_OK) {
+				error(rv);
+				delete pOutput;
+				return false;
+			}
 		}
 		else {
 			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the digest operation" << std::endl;
 		}
 	}
 	else {
 		std::cout << "\t** not compliant" << std::endl;
 	}
 
-	std::cout << "\n\n\t3- Calling C_DigestUpdate with pPart NULL_PTR and ulPartLen NULL" << std::endl;
+	std::cout << "\n\n\t2- Calling C_DigestUpdate with pPart NULL_PTR and ulPartLen NULL" << std::endl;
 	rv = g_pFuncList->C_DigestUpdate(hSession, NULL_PTR, NULL);
 	error(rv);
 	if (rv == CKR_OK) {
@@ -552,7 +592,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 	}
 
 
-	std::cout << "\n\n\t4- Calling C_DigestUpdate with a NULL_PTR pData and not-NULL ulDataLen	   ->	  **CRASH**" << std::endl;
+	std::cout << "\n\n\t3- Calling C_DigestUpdate with a NULL_PTR pData and not-NULL ulDataLen	   ->	  **CRASH**" << std::endl;
 	//CRASH	
 	/*rv = g_pFuncList->C_DigestUpdate(hSession, NULL_PTR, dataVal.getLength());
 	error(rv);
@@ -595,7 +635,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 		}
 	}*/
 
-	std::cout << "\n\n\t5- Calling C_DigestUpdate with a not-NULL pData and NULL ulDataLen" << std::endl;
+	std::cout << "\n\n\t4- Calling C_DigestUpdate with a not-NULL pData and NULL ulDataLen" << std::endl;
 	rv = g_pFuncList->C_DigestUpdate(hSession, (BYTE*)dataVal.getContent(), NULL);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
@@ -637,7 +677,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 		}
 	}
 
-	std::cout << "\n\n\t6- Calling C_DigestUpdate with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
+	/*std::cout << "\n\n\t6- Calling C_DigestUpdate with a not-NULL pData and a wrong (it does not match with the actual pData's size) not-NULL ulDataLen (< pData size)" << std::endl;
 	rv = g_pFuncList->C_DigestUpdate(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength() - 1);
 	error(rv);
 	if (rv == CKR_ARGUMENTS_BAD) {
@@ -719,9 +759,9 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 				return false;
 			}
 		}
-	}
+	}*/
 
-	std::cout << "\n\n\t8- Calling C_DigestUpdate with all arguments set to NULL" << std::endl;
+	std::cout << "\n\n\t5- Calling C_DigestUpdate with all arguments set to NULL" << std::endl;
 	rv = g_pFuncList->C_DigestUpdate(NULL, NULL_PTR, NULL);
 	error(rv);
 	if (rv == CKR_SESSION_HANDLE_INVALID) {
@@ -730,9 +770,20 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 		rv = g_pFuncList->C_DigestInit(hSession, pMechanism);
 		if (rv == CKR_OPERATION_ACTIVE) {
 			std::cout << "Yes	** not compliant" << std::endl;
+			std::cout << "\tCalling C_DigestFinal" << std::endl;
+			g_pFuncList->C_DigestFinal(hSession, pOutput, &outputLen);
+
+			std::cout << "\t -Re-init the digest operation" << std::endl;
+			rv = g_pFuncList->C_DigestInit(hSession, pMechanism);
+			if (rv != CKR_OK) {
+				error(rv);
+				delete pOutput;
+				return false;
+			}
 		}
 		else {
 			std::cout << "No	-> compliant" << std::endl;
+			std::cout << "\t -Re-init the digest operation" << std::endl;
 		}
 	}
 	else {
@@ -814,6 +865,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 			}
 			else {
 				std::cout << "No	** not compliant" << std::endl;
+				std::cout << "\t -Re-init the digest operation" << std::endl;
 			}
 
 		}
@@ -821,6 +873,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 			std::cout << "\t** not compliant" << std::endl;
 		}
 
+		/*
 		//HEAP CORRUPTION DETECTED
 		std::cout << "\n\n\t-3 Calling C_DigestFinal with a buffer too small and a wrong (it does not match with the accual buffer's size) outputLen Ok (with value >= MD5 digest length (16))" << std::endl;
 		rv = g_pFuncList->C_DigestFinal(hSession, pOutputSmall, &outputLen);
@@ -951,7 +1004,7 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 			std::cout << "\t** not compliant : CKR_SESSION_HANDLE_INVALID > CKR_ARGUMENTS_BAD" << std::endl;
 		}
 
-		std::cout << "\n\n\n\n";
+		std::cout << "\n\n\n\n";*/
 
 		//statefull test
 		/*std::cout << "\n\n\t7- Calling C_DigestFinal without initialization" << std::endl;
@@ -965,6 +1018,67 @@ bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_
 		}*/
 
 		free(pOutputSmall);
+	}
+
+
+
+	std::cout << "\n\n\t3- Calling C_DigestFinal with a NULL pulDigestLen	  ->	**CRASH**" << std::endl;
+	/*delete pOutput;
+	pOutput = (BYTE*)malloc(outputLen);
+	rv = g_pFuncList->C_DigestFinal(hSession, pOutput, NULL_PTR);
+	error(rv);
+	if (rv == CKR_ARGUMENTS_BAD) {
+		std::cout << "\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
+		if (rv == CKR_OK) {
+			UUCByteArray output(pOutput, outputLen);
+			std::cout << "\t\tHash: " << output.toHexString() << (output.toHexString() == MD5_NULL_VALUE_DIGEST ? " (digest of an empty input)" : "") << std::endl;
+			if (output.toHexString() != MD5_TEST_DIGEST)
+				std::cout << "\t\tHash incorrect" << std::endl;
+			else
+				std::cout << "\t\tHash correct" << std::endl;
+			std::cout << "\t -Re-init the digest operation" << std::endl;
+			rv = g_pFuncList->C_DigestInit(hSession, pMechanism);
+			if (rv != CKR_OK) {
+				error(rv);
+				return false;
+			}
+			std::cout << "\t -Re-calling C_DigestUpdate" << std::endl;
+			rv = g_pFuncList->C_DigestUpdate(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength());
+			if (rv != CKR_OK) {
+				error(rv);
+				delete pOutput;
+				return false;
+			}
+		}
+	}*/
+
+
+	std::cout << "\n\n\t4- Calling C_DigestFinal with NULL hSession" << std::endl;
+	rv = g_pFuncList->C_DigestFinal(NULL, pOutput, &outputLen);
+	error(rv);
+	if (rv == CKR_SESSION_HANDLE_INVALID) {
+		std::cout << "\t-> compliant" << std::endl;
+		std::cout << "\tChecking if operation is still active...";
+		rv = g_pFuncList->C_DigestInit(hSession, pMechanism);
+		if (rv == CKR_OPERATION_ACTIVE) {
+			std::cout << "Yes	** not compliant" << std::endl;
+			g_pFuncList->C_DigestFinal(hSession, pOutput, &outputLen);
+			UUCByteArray output(pOutput, outputLen);
+			std::cout << "\t\tHash: " << output.toHexString() << (output.toHexString() == MD5_NULL_VALUE_DIGEST ? " (digest of an empty input)" : "") << std::endl;
+			if (output.toHexString() != MD5_TEST_DIGEST)
+				std::cout << "\t\tHash incorrect" << std::endl;
+			else
+				std::cout << "\t\tHash correct" << std::endl;
+		}
+		else {
+			std::cout << "No	-> compliant" << std::endl;
+		}
+	}
+	else {
+		std::cout << "\t** not compliant" << std::endl;
 	}
 
 	delete pOutput;

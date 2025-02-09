@@ -334,7 +334,7 @@ bool PKCS11::logout(CK_SESSION_HANDLE hSession)
 
 bool PKCS11::findObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pAttributes, CK_ULONG ulCount, CK_OBJECT_HANDLE_PTR pObjects, CK_ULONG_PTR pulObjCount)
 {
-	std::cout << "  -> Ricerca di oggetti \n    - C_FindObjectsInit\n    - C_FindObjects\n    - C_FindObjectsFinal" << std::endl;
+	//std::cout << "  -> Ricerca di oggetti \n    - C_FindObjectsInit\n    - C_FindObjects\n    - C_FindObjectsFinal" << std::endl;
 
 	CK_RV rv;
 
@@ -346,7 +346,7 @@ bool PKCS11::findObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pAttributes
 		return false;
 	}
 
-	std::cout << "      - C_FindObjectsInit OK" << std::endl;
+	//std::cout << "      - C_FindObjectsInit OK" << std::endl;
 
 	/*std::cout << "Try to initialize again" << std::endl;
 	rv = g_pFuncList->C_FindObjectsInit(hSession, pAttributes, ulCount);
@@ -393,7 +393,7 @@ bool PKCS11::findObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pAttributes
 		return false;
 	}
 
-	std::cout << "      - C_FindObjects OK. Objects found: " << *pulObjCount << std::endl;
+	//std::cout << "      - C_FindObjects OK. Objects found: " << *pulObjCount << std::endl;
 
 	rv = g_pFuncList->C_FindObjectsFinal(hSession);
 	if (rv != CKR_OK)
@@ -404,7 +404,7 @@ bool PKCS11::findObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pAttributes
 		return false;
 	}
 
-	std::cout << "      - C_FindObjectsFinal OK" << std::endl;
+	//std::cout << "      - C_FindObjectsFinal OK" << std::endl;
 
 	/*std::cout << "Try to Finalize again" << std::endl;
 
