@@ -32,6 +32,8 @@ public:
 
 	CK_SESSION_HANDLE openSession(CK_SLOT_ID slotid);
 
+	CK_SESSION_HANDLE openSession_ReadOnly(CK_SLOT_ID slotid);
+
 	bool login_modificato(CK_SESSION_HANDLE hSession); //TODO
 
 	bool login(CK_SESSION_HANDLE hSession);

@@ -171,6 +171,23 @@ CK_SESSION_HANDLE PKCS11::openSession(CK_SLOT_ID slotid)
 	return hSession;
 }
 
+CK_SESSION_HANDLE PKCS11::openSession_ReadOnly(CK_SLOT_ID slotid)
+{
+	std::cout << "  -> Apre una sessione con lo slot " << slotid << " - C_OpenSession" << std::endl;
+
+	CK_SESSION_HANDLE hSession;
+	CK_RV rv = g_pFuncList->C_OpenSession(slotid, CKF_SERIAL_SESSION, NULL, NULL, &hSession);
+	if (rv != CKR_OK)
+	{
+		error(rv);
+		return NULL_PTR;
+	}
+
+	std::cout << "  -- Sessione aperta: " << hSession << std::endl;
+
+	return hSession;
+}
+
 
 bool PKCS11::login_modificato(CK_SESSION_HANDLE hSession)
 {

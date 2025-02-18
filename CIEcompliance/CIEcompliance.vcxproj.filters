@@ -48,6 +48,9 @@
     <ClCompile Include="verifyCompliance.cpp">
       <Filter>File di origine</Filter>
     </ClCompile>
+    <ClCompile Include="miscellaneousCompliance.cpp">
+      <Filter>File di origine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cryptoki.h">
@@ -96,6 +99,9 @@
       <Filter>File di intestazione</Filter>
     </ClInclude>
     <ClInclude Include="verifyCompliance.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="miscellaneousCompliance.h">
       <Filter>File di intestazione</Filter>
     </ClInclude>
   </ItemGroup>

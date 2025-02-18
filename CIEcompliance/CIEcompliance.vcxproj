@@ -132,6 +132,7 @@
     <ClCompile Include="digestCompliance.cpp" />
     <ClCompile Include="error_map.cpp" />
     <ClCompile Include="functions.cpp" />
+    <ClCompile Include="miscellaneousCompliance.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="signCompliance.cpp" />
     <ClCompile Include="stdafx.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="digestCompliance.h" />
     <ClInclude Include="error_map.h" />
     <ClInclude Include="functions.h" />
+    <ClInclude Include="miscellaneousCompliance.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="pkcs11.h" />
     <ClInclude Include="pkcs11f.h" />

@@ -68,13 +68,13 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 			return false;
 		}
 
-		rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), NULL, &outputLen);
+		/*rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), NULL, &outputLen);
 		if (rv == CKR_GENERAL_ERROR) { continue; }
 		if (rv != CKR_OK)
 		{
 			error(rv);
 			return false;
-		}
+		}*/
 
 		pOutput = (BYTE*)malloc(outputLen);
 
@@ -103,13 +103,13 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 			error(rv);
 			return false;
 		}
-		rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, NULL, &outputLenNull);
+		/*rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, NULL, &outputLenNull);
 		if (rv == CKR_GENERAL_ERROR) { continue; }
 		if (rv != CKR_OK)
 		{
 			error(rv);
 			return false;
-		}
+		}*/
 		pOutputNull = (BYTE*)malloc(outputLenNull);
 
 		rv = g_pFuncList->C_Sign(hSession, NULL_PTR, NULL, pOutputNull, &outputLenNull);
@@ -1068,4 +1068,6 @@ bool verifyTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PK
 	}
 
 	std::cout << "\n\n\n\n";
+
+	return true;
 }

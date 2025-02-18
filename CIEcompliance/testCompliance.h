@@ -16,6 +16,7 @@
 #include "signCompliance.h"
 #include "digestCompliance.h"
 #include "verifyCompliance.h"
+#include "miscellaneousCompliance.h"
 
 
 typedef CK_RV(*C_GETFUNCTIONLIST)(CK_FUNCTION_LIST_PTR_PTR ppFunctionList);
@@ -31,6 +32,14 @@ public:
 	bool signCompliance(CK_SESSION_HANDLE hSession);
 
 	bool verifyCompliance(CK_SESSION_HANDLE hSession);
+
+	bool setPinCompliance(CK_SESSION_HANDLE hSession);
+
+	bool getAttributeValueCompliance(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject);
+
+	bool unsupportedFunctionsCompliance(CK_SESSION_HANDLE hSession);
+
+	bool initPinCompliance(CK_SESSION_HANDLE hSession);
 
 private:
 	CK_FUNCTION_LIST_PTR g_pFuncList;

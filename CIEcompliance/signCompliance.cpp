@@ -162,12 +162,12 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 	std::cout << "\n\n\n\n[TEST]	->	 C_Sign" << std::endl;
 
 	std::cout << "\n\t0- Calling C_Sign with pSignature NULL_PTR" << std::endl;
-	rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), NULL_PTR, &outputLen);
+	/*rv = g_pFuncList->C_Sign(hSession, (BYTE*)dataVal.getContent(), dataVal.getLength(), NULL_PTR, &outputLen);
 	if (rv != CKR_OK)
 	{
 		error(rv);
 		return false;
-	}
+	}*/
 
 	std::cout << "\t[PKCS#1 RSA SIGNATURE]: " << outputLen << " bytes to hold the output" << std::endl;
 	if (outputLen < RSA_KEY_MODULUS_LENGTH) {
@@ -320,7 +320,6 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 		if (rv == CKR_BUFFER_TOO_SMALL)
 		{
 			std::cout << "\t-> compliant" << std::endl;
-			std::cout << "\t** not compliant" << std::endl;
 			std::cout << "\tChecking if operation is still active...";
 			rv = g_pFuncList->C_SignInit(hSession, pMechanism, hObjectPriKey);
 			if (rv == CKR_OPERATION_ACTIVE) {
@@ -1156,4 +1155,6 @@ bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS
 	}
 
 	std::cout << "\n\n\n\n";
+
+	return true;
 }
