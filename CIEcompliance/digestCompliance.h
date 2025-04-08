@@ -8,6 +8,8 @@
 #include <iostream>
 #include <map>
 
+#include "softhsm.h"
+
 #define MD5_DIGEST_LENGTH 16
 
 bool digestTest(CK_SESSION_HANDLE hSession, CK_SLOT_ID slotID, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS11* cryptoki);

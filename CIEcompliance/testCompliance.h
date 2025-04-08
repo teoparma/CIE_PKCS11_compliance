@@ -41,6 +41,8 @@ public:
 
 	bool initPinCompliance(CK_SESSION_HANDLE hSession);
 
+	bool loginCompliance(CK_SESSION_HANDLE hSession);
+
 private:
 	CK_FUNCTION_LIST_PTR g_pFuncList;
 	//std::map<CK_MECHANISM_TYPE, std::string> mechanismMap;

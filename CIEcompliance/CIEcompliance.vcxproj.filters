@@ -104,5 +104,8 @@
     <ClInclude Include="miscellaneousCompliance.h">
       <Filter>File di intestazione</Filter>
     </ClInclude>
+    <ClInclude Include="softhsm.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

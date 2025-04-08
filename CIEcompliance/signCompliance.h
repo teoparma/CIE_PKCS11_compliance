@@ -8,6 +8,8 @@
 #include <string>
 #include <iostream>
 
+#include "softhsm.h"
+
 #define RSA_KEY_MODULUS_LENGTH 256
 
 bool signTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR pFunctionList, PKCS11* cryptoki);

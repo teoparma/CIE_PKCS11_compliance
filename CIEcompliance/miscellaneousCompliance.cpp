@@ -232,3 +232,146 @@ bool initPinTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, P
 
 	return true;
 }
+
+
+bool loginTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS11* cryptoki) {
+
+	CK_RV rv;
+
+	std::string sPIN;
+	bool pinIsGood = false;
+	while (!pinIsGood)
+	{
+		std::cout << "   - Inserire la seconda parte del PIN ";
+		std::cin >> sPIN;
+		//std::getline(std::cin, sPIN);
+		size_t len = sPIN.size();
+		if (len != 4)
+		{
+			std::cout << "   Attenzione: Il pin deve essere composto da 4 numeri" << std::endl;;
+		}
+		else
+		{
+			const char* szPIN = sPIN.c_str();
+
+			size_t i = 0;
+			while (i < len && (szPIN[i] >= '0' && szPIN[i] <= '9'))
+				i++;
+
+			if (i == len)
+				pinIsGood = true;
+			else
+				std::cout << "   Attenzione: Il pin deve essere composto da 4 numeri" << std::endl;;
+		}
+	}
+
+	std::cout << "\n\n\t1- Login with NULL pin" << std::endl;
+
+	rv = g_pFuncList->C_Login(hSession, CKU_USER, NULL, NULL);
+	error(rv);
+
+	//login as normal user
+	g_pFuncList->C_Login(hSession, CKU_USER, (CK_CHAR_PTR)sPIN.c_str(), sPIN.size());
+
+	std::cout << "\n\n\t2- Login as Security Officer with Normal User already logged in" << std::endl;
+	rv = g_pFuncList->C_Login(hSession, CKU_SO, (CK_CHAR_PTR)sPIN.c_str(), sPIN.size());
+	error(rv);
+	if (rv == CKR_USER_ANOTHER_ALREADY_LOGGED_IN) {
+		std::cout << "\t\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t\t** not compliant" << std::endl;
+	}
+
+	std::cout << "\n\n\t2- Login with user already logged in (Normal User)" << std::endl;
+	rv = g_pFuncList->C_Login(hSession, CKU_USER, (CK_CHAR_PTR)sPIN.c_str(), sPIN.size());
+	error(rv);
+	if (rv == CKR_USER_ALREADY_LOGGED_IN) {
+		std::cout << "\t\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t\t** not compliant" << std::endl;
+	}
+
+	//logout and login as security officer
+	g_pFuncList->C_Logout(hSession);
+	g_pFuncList->C_Login(hSession, CKU_SO, (CK_CHAR_PTR)sPIN.c_str(), sPIN.size());
+
+	std::cout << "\n\n\t3- Login as Normal User with Security Officer already logged in" << std::endl;
+	rv = g_pFuncList->C_Login(hSession, CKU_USER, (CK_CHAR_PTR)sPIN.c_str(), sPIN.size());
+	error(rv);
+	if (rv == CKR_USER_ANOTHER_ALREADY_LOGGED_IN) {
+		std::cout << "\t\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t\t** not compliant" << std::endl;
+	}
+
+
+	std::cout << "\n\n\t4- Login with user already logged in (Security Officer)" << std::endl;
+	rv = g_pFuncList->C_Login(hSession, CKU_SO, (CK_CHAR_PTR)sPIN.c_str(), sPIN.size());
+	error(rv);
+	if (rv == CKR_USER_ALREADY_LOGGED_IN) {
+		std::cout << "\t\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t\t** not compliant" << std::endl;
+	}
+
+
+	//getting private object handle
+
+	CK_OBJECT_HANDLE hObjectPriKey;
+
+	CK_OBJECT_CLASS ckClassPri = CKO_PRIVATE_KEY;
+
+	CK_ATTRIBUTE template_cko_keyPri[] = {
+		{CKA_CLASS, &ckClassPri, sizeof(ckClassPri)},
+	};
+
+	CK_ULONG ulCount = 1;
+
+	std::cout << "\n\t-Finding private key...";
+	if (!cryptoki->findObject(hSession, template_cko_keyPri, 1, &hObjectPriKey, &ulCount))
+	{
+		std::cout << "  -> Operazione fallita" << std::endl;
+		return false;
+	}
+
+	if (ulCount < 1)
+	{
+		std::cout << "  -> Oggetto chiave privata non trovato" << std::endl;
+		return false;
+	}
+	std::cout << "Ok" << std::endl;
+
+
+
+	//logout
+	g_pFuncList->C_Logout(hSession);
+
+	std::cout << "\n\n\t5- Logout with user not logged in" << std::endl;
+	rv = g_pFuncList->C_Logout(hSession);
+	error(rv);
+	if (rv == CKR_USER_NOT_LOGGED_IN) {
+		std::cout << "\t\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t\t** not compliant" << std::endl;
+	}
+
+
+	CK_MECHANISM mech[] = { CKM_RSA_PKCS, NULL, 0 };
+	std::cout << "\n\n\t6- Try using a handle of a private key after logout" << std::endl;
+	rv = g_pFuncList->C_SignInit(hSession, mech, hObjectPriKey);
+	error(rv);
+	if(rv==CKR_SESSION_HANDLE_INVALID){
+		std::cout << "\t\t-> compliant" << std::endl;
+	}
+	else {
+		std::cout << "\t\t** not compliant" << std::endl;
+	}
+
+
+	return true;
+}

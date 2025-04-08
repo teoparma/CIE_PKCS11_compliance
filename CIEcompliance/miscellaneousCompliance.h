@@ -16,4 +16,6 @@ bool unsupportedFunctionsTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g
 
 bool initPinTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS11* cryptoki);
 
+bool loginTest(CK_SESSION_HANDLE hSession, CK_FUNCTION_LIST_PTR g_pFuncList, PKCS11* cryptoki);
+
 #endif

@@ -29,6 +29,7 @@
 #include "functions.h"
 #include "testCompliance.h"
 
+
 CK_FUNCTION_LIST_PTR g_pFuncList;
 std::map<CK_MECHANISM_TYPE, std::string> mechanismMap;
 
@@ -50,13 +51,16 @@ int main(int argc, char* argv[])
 	mechanismMap[CKM_SHA256] = "CKM_SHA256";
 
 
-	LPCWSTR szCryptoki = L"ciepki.dll";
-	//LPCWSTR szCryptoki = L"C:\\SoftHSM2\\lib\\softhsm2-x64.dll";
-	//LPCWSTR szCryptoki = L"C:\\Program Files\\OpenSC Project\\OpenSC\\pkcs11\\opensc-pkcs11.dll";
+#ifdef SOFTHSM
+	LPCWSTR szCryptoki = L"C:\\SoftHSM2\\lib\\softhsm2-x64.dll";
 	std::cout << "Load Module " << szCryptoki << std::endl;
-	//HMODULE hModule = LoadLibrary(szCryptoki);
+	HMODULE hModule = LoadLibrary("C:\\SoftHSM2\\lib\\softhsm2-x64.dll");
+#else
+	LPCWSTR szCryptoki = L"ciepki.dll";
+	std::cout << "Load Module " << szCryptoki << std::endl;
 	HMODULE hModule = LoadLibrary("ciepki.dll");
-	//HMODULE hModule = LoadLibrary("C:\\SoftHSM2\\lib\\softhsm2-x64.dll");
+#endif
+
 	if (!hModule)
 	{
 		std::cout << "  -> Modulo " << szCryptoki << " non trovato" << std::endl;
@@ -108,6 +112,7 @@ int main(int argc, char* argv[])
 			std::cout << "5 get attribute value test" << std::endl;
 			std::cout << "6 unsupported functions test" << std::endl;
 			std::cout << "7 init PIN test" << std::endl;
+			std::cout << "8 login test" << std::endl;
 			std::cout << "20 Exit" << std::endl;
 			std::cout << "Insert the test number:" << std::endl;
 			std::cin >> sCommandLine;
@@ -463,6 +468,65 @@ int main(int argc, char* argv[])
 
 			free(pSlotList);
 			cryptoki.closeSession(hSession);
+
+			cryptoki.close();
+			std::cout << "-> Test 6 concluso" << std::endl;
+		}
+		else if (strcmp(szCmd, "8") == 0) {
+			CK_ULONG ulCount = 0;
+			std::cout << "-> Test 7 - Login compliance" << std::endl;
+			cryptoki.init();
+
+			CK_SLOT_ID_PTR pSlotList = cryptoki.getSlotList(true, &ulCount);
+			if (pSlotList == NULL_PTR)
+			{
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			CK_SESSION_HANDLE hSession = cryptoki.openSession(pSlotList[0]);
+			if (hSession == NULL_PTR)
+			{
+				free(pSlotList);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+			std::cout << "Aperta session Read/Write" << std::endl;
+
+			if (!tester.loginCompliance(hSession))
+			{
+				free(pSlotList);
+				cryptoki.closeSession(hSession);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			cryptoki.closeSession(hSession);
+
+			/*CK_SESSION_HANDLE hSession = cryptoki.openSession_ReadOnly(pSlotList[0]);
+			if (hSession == NULL_PTR)
+			{
+				free(pSlotList);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+			std::cout << "Aperta session Read/Write" << std::endl;
+
+			if (!tester.loginCompliance(hSession))
+			{
+				free(pSlotList);
+				cryptoki.closeSession(hSession);
+				cryptoki.close();
+				std::cout << "-> Test non completato" << std::endl;
+				continue;
+			}
+
+			free(pSlotList);
+			cryptoki.closeSession(hSession);*/
 
 			cryptoki.close();
 			std::cout << "-> Test 6 concluso" << std::endl;

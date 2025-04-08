@@ -33,3 +33,7 @@ bool Tester::unsupportedFunctionsCompliance(CK_SESSION_HANDLE hSession) {
 bool Tester::initPinCompliance(CK_SESSION_HANDLE hSession) {
 	return initPinTest(hSession, g_pFuncList, cryptoki);
 }
+
+bool Tester::loginCompliance(CK_SESSION_HANDLE hSession) {
+	return loginTest(hSession, g_pFuncList, cryptoki);
+}
